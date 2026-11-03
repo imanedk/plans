@@ -1,0 +1,35 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>مخطط عقاري</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:'Segoe UI',Tahoma,'Noto Sans Arabic',sans-serif;background:#f1f5f9;color:#0f172a}
+header{background:linear-gradient(135deg,#1d4ed8,#0ea5e9);color:#fff;padding:30px 18px 64px;text-align:center}
+header small{opacity:.85;display:block;margin-bottom:6px}header h1{margin:0;font-size:24px;line-height:1.5}
+main{max-width:720px;margin:-40px auto 30px;padding:0 14px}
+section{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:18px 20px;margin-bottom:14px;box-shadow:0 6px 18px #0f172a10}
+h2{margin:0 0 8px;font-size:17px;color:#1d4ed8}
+.r{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid #f1f5f9}
+.r:last-child{border:none}.r span{color:#64748b}.r b{text-align:left;word-break:break-word}
+.btn{display:block;text-align:center;background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;text-decoration:none;padding:14px;border-radius:14px;font-weight:700;font-size:17px}
+.e{text-align:center;color:#64748b;padding:40px 10px}
+footer{text-align:center;color:#94a3b8;font-size:12px;padding-bottom:30px}
+</style></head><body>
+<header><small>المرجع العقاري</small><h1 id="ref">—</h1></header><main id="m"></main>
+<footer>هذا المخطط لا يشكل سند ملكية</footer>
+<script>
+(function(){
+var N={sec:"القسم",grp:"المجموعة",par:"القطعة",area:"المساحة",scale:"المقياس",date:"تاريخ الإنجاز",no:"رقم المخطط",crs:"نظام الإحداثيات",eng:"المهندس المنجز",off:"المكتب المنجز",wil:"الولاية",dai:"الدائرة",com:"البلدية",lieu:"المكان المسمى"};
+var G=[["📐 المعطيات التقنية",["area","scale","date","no","crs"]],["👤 الجهة المنجزة",["eng","off"]],["📍 الموقع",["wil","dai","com","lieu"]]];
+var d={},m=document.getElementById("m");
+try{var h=location.hash.replace(/^#(d=)?/,"").replace(/-/g,"+").replace(/_/g,"/");while(h.length%4)h+="=";
+d=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(h),function(c){return c.charCodeAt(0)})));}catch(e){}
+function v(k){return d[k]&&String(d[k]).trim()?String(d[k]):"—"}
+if(!Object.keys(d).length){m.innerHTML='<section class="e">لا توجد بيانات في هذا الرابط — امسح رمز QR من جديد</section>';return}
+document.getElementById("ref").textContent="القسم "+v("sec")+" / المجموعة "+v("grp")+" / القطعة "+v("par");
+G.forEach(function(g){var s=document.createElement("section"),t=document.createElement("h2");t.textContent=g[0];s.appendChild(t);
+g[1].forEach(function(k){var r=document.createElement("div"),a=document.createElement("span"),b=document.createElement("b");r.className="r";a.textContent=N[k];
+b.textContent=(k==="area"&&d.area)?Number(d.area).toLocaleString("en-US")+" م²":v(k);r.appendChild(a);r.appendChild(b);s.appendChild(r)});m.appendChild(s)});
+var l=d.map;if(!l){var p=[d.lieu,d.com,(d.dai&&d.dai!==d.com)?d.dai:"",d.wil].filter(Boolean);if(p.length){p.push("الجزائر");l="https://maps.google.com/?q="+encodeURIComponent(p.join(", "))}}
+if(l&&/^https?:\/\//.test(l)){var s=document.createElement("section"),a=document.createElement("a");a.className="btn";a.href=l;a.target="_blank";a.rel="noopener";a.textContent="🗺 فتح الموقع في Google Maps";s.appendChild(a);m.appendChild(s)}
+})();
+if("serviceWorker"in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){})}
+</script></body></html>
