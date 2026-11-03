@@ -19,19 +19,30 @@ footer{text-align:center;color:#94a3b8;font-size:12px;padding-bottom:30px}
 (function(){
 var N={sec:"القسم",grp:"المجموعة",par:"القطعة",area:"المساحة",scale:"المقياس",date:"تاريخ الإنجاز",no:"رقم المخطط",crs:"نظام الإحداثيات",eng:"المهندس المنجز",off:"المكتب المنجز",wil:"الولاية",dai:"الدائرة",com:"البلدية",lieu:"المكان المسمى"};
 var G=[["📐 المعطيات التقنية",["area","scale","date","no","crs"]],["👤 الجهة المنجزة",["eng","off"]],["📍 الموقع",["wil","dai","com","lieu"]]];
-var d={},m=document.getElementById("m");
-try{var h=location.hash.replace(/^#(d=)?/,"").replace(/-/g,"+").replace(/_/g,"/");while(h.length%4)h+="=";
-d=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(h),function(c){return c.charCodeAt(0)})));}catch(e){}
-function v(k){return d[k]&&String(d[k]).trim()?String(d[k]):"—"}
+var m=document.getElementById("m"),shown=false;
+function v(d,k){return d[k]&&String(d[k]).trim()?String(d[k]):"—"}
 function pad(n){n=Math.round(n*100)/100;return(n<10?"0":"")+n}
 function hac(a){a=Number(a);var h=Math.floor(a/10000),r=a-h*10000,x=Math.floor(r/100);return pad(h)+" هـ / "+pad(x)+" آر / "+pad(r-x*100)+" س"}
-if(!Object.keys(d).length){m.innerHTML='<section class="e">لا توجد بيانات في هذا الرابط — امسح رمز QR من جديد</section>';return}
-document.getElementById("ref").textContent="القسم "+v("sec")+" / المجموعة "+v("grp")+" / القطعة "+v("par");
+function dec(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s),function(c){return c.charCodeAt(0)})))}
+function render(d){
+m.innerHTML="";shown=true;
+document.getElementById("ref").textContent="القسم "+v(d,"sec")+" / المجموعة "+v(d,"grp")+" / القطعة "+v(d,"par");
 G.forEach(function(g){var s=document.createElement("section"),t=document.createElement("h2");t.textContent=g[0];s.appendChild(t);
 g[1].forEach(function(k){var r=document.createElement("div"),a=document.createElement("span"),b=document.createElement("b");r.className="r";a.textContent=N[k];
-b.textContent=(k==="area"&&d.area)?(d.af==="hac"?hac(d.area)+"  ("+Number(d.area).toLocaleString("en-US")+" م²)":Number(d.area).toLocaleString("en-US")+" م²"):v(k);r.appendChild(a);r.appendChild(b);s.appendChild(r)});m.appendChild(s)});
+b.textContent=(k==="area"&&d.area)?(d.af==="hac"?hac(d.area)+"  ("+Number(d.area).toLocaleString("en-US")+" م²)":Number(d.area).toLocaleString("en-US")+" م²"):v(d,k);
+r.appendChild(a);r.appendChild(b);s.appendChild(r)});m.appendChild(s)});
 var l=d.map;if(!l){var p=[d.lieu,d.com,(d.dai&&d.dai!==d.com)?d.dai:"",d.wil].filter(Boolean);if(p.length){p.push("الجزائر");l="https://maps.google.com/?q="+encodeURIComponent(p.join(", "))}}
 if(l&&/^https?:\/\//.test(l)){var s=document.createElement("section"),a=document.createElement("a");a.className="btn";a.href=l;a.target="_blank";a.rel="noopener";a.textContent="🗺 فتح الموقع في Google Maps";s.appendChild(a);m.appendChild(s)}
+}
+var H=location.hash.replace(/^#/,""),P={};
+H.split("&").forEach(function(x){var i=x.indexOf("=");if(i>0)P[x.slice(0,i)]=x.slice(i+1)});
+if(!P.d&&!P.p&&H)P.d=H;
+try{if(P.d)render(dec(P.d))}catch(e){}
+function none(){if(!shown)m.innerHTML='<section class="e">لا توجد بيانات في هذا الرابط — امسح رمز QR من جديد</section>'}
+if(P.p&&/^[A-Za-z0-9_-]{6,64}$/.test(P.p)&&window.fetch){
+if(!shown)m.innerHTML='<section class="e">جارٍ التحميل…</section>';
+fetch("data/"+P.p+".json",{cache:"no-store"}).then(function(r){return r.ok?r.json():Promise.reject()}).then(render).catch(none)
+}else none();
 })();
 if("serviceWorker"in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){})}
 </script></body></html>
