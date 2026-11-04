@@ -1,5 +1,5 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>مخطط عقاري</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>مخطط عقاري</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:'Segoe UI',Tahoma,'Noto Sans Arabic',sans-serif;background:#f1f5f9;color:#0f172a}
 header{background:linear-gradient(135deg,#1d4ed8,#0ea5e9);color:#fff;padding:30px 18px 64px;text-align:center}
@@ -23,7 +23,8 @@ var m=document.getElementById("m"),shown=false;
 function v(d,k){return d[k]&&String(d[k]).trim()?String(d[k]):"—"}
 function pad(n){n=Math.round(n*100)/100;return(n<10?"0":"")+n}
 function hac(a){a=Number(a);var h=Math.floor(a/10000),r=a-h*10000,x=Math.floor(r/100);return pad(h)+" هـ / "+pad(x)+" آر / "+pad(r-x*100)+" س"}
-function dec(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s),function(c){return c.charCodeAt(0)})))}
+function b64(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";return Uint8Array.from(atob(s),function(c){return c.charCodeAt(0)})}
+function dec(s){return JSON.parse(new TextDecoder().decode(b64(s)))}
 function render(d){
 m.innerHTML="";shown=true;
 document.getElementById("ref").textContent="القسم "+v(d,"sec")+" / المجموعة "+v(d,"grp")+" / القطعة "+v(d,"par");
@@ -32,17 +33,28 @@ g[1].forEach(function(k){var r=document.createElement("div"),a=document.createEl
 b.textContent=(k==="area"&&d.area)?(d.af==="hac"?hac(d.area)+"  ("+Number(d.area).toLocaleString("en-US")+" م²)":Number(d.area).toLocaleString("en-US")+" م²"):v(d,k);
 r.appendChild(a);r.appendChild(b);s.appendChild(r)});m.appendChild(s)});
 var l=d.map;if(!l){var p=[d.lieu,d.com,(d.dai&&d.dai!==d.com)?d.dai:"",d.wil].filter(Boolean);if(p.length){p.push("الجزائر");l="https://maps.google.com/?q="+encodeURIComponent(p.join(", "))}}
-if(l&&/^https?:\/\//.test(l)){var s=document.createElement("section"),a=document.createElement("a");a.className="btn";a.href=l;a.target="_blank";a.rel="noopener";a.textContent="🗺 فتح الموقع في Google Maps";s.appendChild(a);m.appendChild(s)}
+if(l&&/^https?:\/\//.test(l)){var s=document.createElement("section"),a=document.createElement("a");a.className="btn";a.href=l;a.target="_blank";a.rel="noopener noreferrer";a.textContent="🗺 فتح الموقع في Google Maps";s.appendChild(a);m.appendChild(s)}
+}
+function none(t){if(!shown)m.innerHTML='<section class="e">'+t+'</section>'}
+function hex(b){return Array.from(new Uint8Array(b)).slice(0,8).map(function(x){return(x<16?"0":"")+x.toString(16)}).join("")}
+async function load(k){
+var raw=b64(k),id=hex(await crypto.subtle.digest("SHA-256",raw));
+var r=await fetch("data/"+id+".enc",{cache:"no-store"});if(!r.ok)throw 0;
+var buf=b64((await r.text()).trim()),key=await crypto.subtle.importKey("raw",raw,"AES-GCM",false,["decrypt"]);
+return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:buf.slice(0,12)},key,buf.slice(12))));
 }
 var H=location.hash.replace(/^#/,""),P={};
 H.split("&").forEach(function(x){var i=x.indexOf("=");if(i>0)P[x.slice(0,i)]=x.slice(i+1)});
-if(!P.d&&!P.p&&H)P.d=H;
+if(!P.k&&!P.d&&!P.p&&H)P.d=H;
 try{if(P.d)render(dec(P.d))}catch(e){}
-function none(){if(!shown)m.innerHTML='<section class="e">لا توجد بيانات في هذا الرابط — امسح رمز QR من جديد</section>'}
-if(P.p&&/^[A-Za-z0-9_-]{6,64}$/.test(P.p)&&window.fetch){
+var ERR="تعذر تحميل بيانات المخطط — يلزم الاتصال بالإنترنت عند أول فتح، أو أن المخطط لم يُنشر بعد (انتظر دقيقة ثم أعد المحاولة)";
+if(P.k&&/^[A-Za-z0-9_-]{22}$/.test(P.k)&&window.crypto&&crypto.subtle&&window.fetch){
 if(!shown)m.innerHTML='<section class="e">جارٍ التحميل…</section>';
-fetch("data/"+P.p+".json",{cache:"no-store"}).then(function(r){return r.ok?r.json():Promise.reject()}).then(render).catch(none)
-}else none();
+load(P.k).then(render).catch(function(){none(ERR)});
+}else if(P.p&&/^[A-Za-z0-9_-]{6,64}$/.test(P.p)&&window.fetch){
+if(!shown)m.innerHTML='<section class="e">جارٍ التحميل…</section>';
+fetch("data/"+P.p+".json",{cache:"no-store"}).then(function(r){return r.ok?r.json():Promise.reject()}).then(render).catch(function(){none(ERR)});
+}else if(!shown)none("لا توجد بيانات في هذا الرابط — امسح رمز QR من جديد");
 })();
 if("serviceWorker"in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){})}
 </script></body></html>
